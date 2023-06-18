@@ -24,7 +24,7 @@ public class UserController {
     }
 
     @PostMapping("/users")
-    public User add(@Valid @RequestBody User user) {//юнит-тесты не покрывают то, что проверяется через @Valid
+    public User add(@Valid @RequestBody User user) { //юнит-тесты не покрывают то, что проверяется через @Valid
         user.setId(id);
         checkUserData(user);
         id++;
@@ -58,7 +58,7 @@ public class UserController {
         if (user.getBirthday().isAfter(LocalDate.now())) {
             throw new ValidationException("дата рождения указа некорректно");
         }
-        if(user.getName() == null){
+        if (user.getName() == null) {
             user.setName("common");
         }
     }

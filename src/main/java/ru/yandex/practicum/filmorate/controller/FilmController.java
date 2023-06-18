@@ -23,7 +23,7 @@ public class FilmController {
     }
 
     @PostMapping("/films")
-    public Film add(@Valid @RequestBody Film film) {//юнит-тесты не покрывают то, что проверяется через @Valid
+    public Film add(@Valid @RequestBody Film film) { //юнит-тесты не покрывают то, что проверяется через @Valid
         film.setId(id);
         checkFilmData(film);
         id++;
