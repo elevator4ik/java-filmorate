@@ -8,18 +8,19 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import javax.validation.Valid;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 
 @RestController
 @Slf4j
 public class UserController {
     int id = 1;
-    List<User> list = new ArrayList<>();
+    Map<Integer, User> list = new HashMap<>();
 
     @GetMapping("/users")
-    public List<User> getUsers() {
+    public Map<Integer, User> getUsers() {
+        log.info("Get all users {}", list.size());
         return list;
     }
 
@@ -28,26 +29,20 @@ public class UserController {
         user.setId(id);
         checkUserData(user);
         id++;
-        list.add(user);
-        return list.get(list.size() - 1);
+        list.put(user.getId(), user);
+        log.info("Put user with id {}", user.getId());
+        return list.get(user.getId()); //цепляем из хранилища, чтобы сразу подтвердить корректную запись
     }
 
     @PutMapping("/users")
     public User update(@Valid @RequestBody User user) {
-        checkUserData(user);
-        User newUser = null;
-
-        for (int i = 0; i < list.size(); i++) {
-            if (user.getId() == list.get(i).getId()) {
-                list.remove(i);
-                list.add(i, user);
-                newUser = user;
-            }
-        }
-        if (newUser == null) {
-            throw new ValidationException("в базе нет пользователя с таким id");
+        if (list.containsKey(user.getId())) {
+            checkUserData(user);
+            list.put(user.getId(), user);
+            log.info("Update user with id {}", user.getId());
+            return list.get(user.getId());
         } else {
-            return newUser;
+            throw new ValidationException("в базе нет пользователя с таким id");
         }
     }
 
@@ -58,8 +53,8 @@ public class UserController {
         if (user.getBirthday().isAfter(LocalDate.now())) {
             throw new ValidationException("дата рождения указа некорректно");
         }
-        if (user.getName() == null) {
-            user.setName("common");
+        if (user.getName() == null || user.getName().isEmpty()) {
+            user.setName(user.getLogin());
         }
     }
 }

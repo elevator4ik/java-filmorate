@@ -14,11 +14,13 @@ import java.util.*;
 @Slf4j
 public class FilmController {
 
+    private static final LocalDate FIRST_FILM = LocalDate.of(1895, 12, 28);
     int id = 1;
-    List<Film> list = new ArrayList<>();
+    Map<Integer, Film> list = new HashMap<>();
 
     @GetMapping("/films")
-    public List<Film> getFilms() {
+    public Map<Integer, Film> getFilms() {
+        log.info("Get all films {}", list.size());
         return list;
     }
 
@@ -27,27 +29,20 @@ public class FilmController {
         film.setId(id);
         checkFilmData(film);
         id++;
-        list.add(film);
-        return list.get(list.size() - 1);
+        list.put(film.getId(), film);
+        log.info("Put film with id {}", film.getId());
+        return list.get(film.getId()); //цепляем из хранилища, чтобы сразу подтвердить корректную запись
     }
 
     @PutMapping("/films")
     public Film update(@Valid @RequestBody Film film) {
-
-        checkFilmData(film);
-        Film newFilm = null;
-
-        for (int i = 0; i < list.size(); i++) {
-            if (film.getId() == list.get(i).getId()) {
-                list.remove(i);
-                list.add(i, film);
-                newFilm = film;
-            }
-        }
-        if (newFilm == null) {
-            throw new ValidationException("в базе нет фильма с таким id");
+        if (list.containsKey(film.getId())) {
+            checkFilmData(film);
+            list.put(film.getId(), film);
+            log.info("Update film with id {}", film.getId());
+            return list.get(film.getId());
         } else {
-            return newFilm;
+            throw new ValidationException("в базе нет фильма с таким id");
         }
     }
 
@@ -56,7 +51,7 @@ public class FilmController {
         if (film.getDescription().length() > 200) {
             throw new ValidationException("максимальная длина описания — 200 символов");
         }
-        if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
+        if (film.getReleaseDate().isBefore(FIRST_FILM)) {
             throw new ValidationException("дата релиза — не раньше 28 декабря 1895 года");
         }
         if (film.getDuration() <= 0) {
