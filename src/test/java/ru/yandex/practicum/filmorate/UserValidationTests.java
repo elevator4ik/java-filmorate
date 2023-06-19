@@ -27,7 +27,7 @@ public class UserValidationTests {
         User user = new User("dolore", "mail@mail.ru", LocalDate.of(1946, Month.AUGUST, 20));
         user.setName("Nick Name");
         userController.add(user);
-        assertEquals("{1=User(id=1, login=dolore, email=mail@mail.ru, birthday=1946-08-20, name=Nick Name)}",
+        assertEquals("[User(id=1, login=dolore, email=mail@mail.ru, birthday=1946-08-20, name=Nick Name)]",
                 userController.getUsers().toString(), "Неверное сохранение на сервер.");
 
     }
@@ -58,7 +58,7 @@ public class UserValidationTests {
     void creatingUserWithEmptyName() {
         User user = new User("dolore", "mail@mail.ru", LocalDate.of(1946, Month.AUGUST, 20));
         userController.add(user);
-        assertEquals("{1=User(id=1, login=dolore, email=mail@mail.ru, birthday=1946-08-20, name=dolore)}",
+        assertEquals("[User(id=1, login=dolore, email=mail@mail.ru, birthday=1946-08-20, name=dolore)]",
                 userController.getUsers().toString(), "Неверное сохранение на сервер.");
 
     }
@@ -73,8 +73,8 @@ public class UserValidationTests {
         user2.setName("est adipisicing");
         user2.setId(1);
         userController.update(user2);
-        assertEquals("{1=User(id=1, login=doloreUpdate, email=mail@yandex.ru, birthday=1976-09-20, " +
-                        "name=est adipisicing)}", userController.getUsers().toString(),
+        assertEquals("[User(id=1, login=doloreUpdate, email=mail@yandex.ru, birthday=1976-09-20, " +
+                        "name=est adipisicing)]", userController.getUsers().toString(),
                 "Неверное сохранение на сервер.");
     }
 

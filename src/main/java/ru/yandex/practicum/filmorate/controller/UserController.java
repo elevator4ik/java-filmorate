@@ -8,7 +8,9 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import javax.validation.Valid;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -19,9 +21,9 @@ public class UserController {
     Map<Integer, User> list = new HashMap<>();
 
     @GetMapping("/users")
-    public Map<Integer, User> getUsers() {
+    public List<User> getUsers() {
         log.info("Get all users {}", list.size());
-        return list;
+        return new ArrayList<>(list.values());
     }
 
     @PostMapping("/users")

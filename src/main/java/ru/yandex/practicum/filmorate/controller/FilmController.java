@@ -19,9 +19,9 @@ public class FilmController {
     Map<Integer, Film> list = new HashMap<>();
 
     @GetMapping("/films")
-    public Map<Integer, Film> getFilms() {
+    public List<Film> getFilms() {
         log.info("Get all films {}", list.size());
-        return list;
+        return new ArrayList<>(list.values());
     }
 
     @PostMapping("/films")

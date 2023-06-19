@@ -29,8 +29,8 @@ public class FilmValidationTests {
 
         filmController.add(film);
 
-        assertEquals("{1=Film(id=1, name=nisi eiusmod, description=adipisicing, releaseDate=1946-08-20, " +
-                "duration=100)}", filmController.getFilms().toString(), "Неверное сохранение на сервер.");
+        assertEquals("[Film(id=1, name=nisi eiusmod, description=adipisicing, releaseDate=1946-08-20, " +
+                "duration=100)]", filmController.getFilms().toString(), "Неверное сохранение на сервер.");
     }
 
     @Test
@@ -86,9 +86,8 @@ public class FilmValidationTests {
         film2.setId(1);
         filmController.update(film2);
 
-        assertEquals("{1=Film(id=1, name=nisiki eiusmod, description=adipisicing wrong, " +
-                "releaseDate=1996-09-20, duration=1100)}", filmController.getFilms().toString(),
-                "Неверное сохранение на сервер.");
+        assertEquals("[Film(id=1, name=nisiki eiusmod, description=adipisicing wrong, releaseDate=1996-09-20, " +
+                        "duration=1100)]", filmController.getFilms().toString(), "Неверное сохранение на сервер.");
     }
 
     @Test
