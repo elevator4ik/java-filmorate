@@ -10,7 +10,6 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.storage.InMemoryFilmStorage;
 
-
 import java.time.LocalDate;
 import java.time.Month;
 
@@ -33,7 +32,7 @@ public class FilmValidationTests {
         filmController.add(film);
 
         assertEquals("[Film(id=1, name=nisi eiusmod, description=adipisicing, " +
-                "releaseDate=1946-08-20, duration=100, likes=null)]", filmController.getFilms().toString(),
+                        "releaseDate=1946-08-20, duration=100, likes=null)]", filmController.getFilms().toString(),
                 "Неверное сохранение на сервер.");
     }
 

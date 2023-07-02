@@ -26,8 +26,8 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public Film getFilm(int id) {
-            log.info("Get user with id {}", id);
-            return films.get(id);
+        log.info("Get user with id {}", id);
+        return films.get(id);
     }
 
     @Override
@@ -41,8 +41,8 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public Film update(Film film) {
-            films.put(film.getId(), film);
-            log.info("Update film with id {}", film.getId());
-            return films.get(film.getId());
+        films.put(film.getId(), film);
+        log.info("Update film with id {}", film.getId());
+        return films.get(film.getId());
     }
 }

@@ -15,6 +15,7 @@ public class InMemoryUserStorage implements UserStorage {
 
     private int id = 1; //не задаем в интерфейсе id, т.к. он должен быть изменяемым
     Map<Integer, User> users = new HashMap<>();
+
     @Override
     public List<User> getUsers() {
         log.info("Get all users {}", users.size());
@@ -23,8 +24,8 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User getUser(int id) {
-            log.info("Get user with id {}", id);
-            return users.get(id);
+        log.info("Get user with id {}", id);
+        return users.get(id);
     }
 
     @Override
@@ -38,8 +39,8 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User update(User user) {
-            users.put(user.getId(), user);
-            log.info("Update user with id {}", user.getId());
-            return users.get(user.getId());
+        users.put(user.getId(), user);
+        log.info("Update user with id {}", user.getId());
+        return users.get(user.getId());
     }
 }
