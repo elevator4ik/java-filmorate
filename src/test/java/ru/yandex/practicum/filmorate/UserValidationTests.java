@@ -6,7 +6,8 @@ import ru.yandex.practicum.filmorate.controller.UserController;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.service.storage.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.InMemoryUserStorage;
 
 
 import java.time.LocalDate;
@@ -21,7 +22,7 @@ public class UserValidationTests {
 
     @BeforeEach
     void creating() {
-        userController = new UserController(new InMemoryUserStorage());
+        userController = new UserController(new UserService(new InMemoryUserStorage()));
     }
 
     @Test
@@ -94,7 +95,7 @@ public class UserValidationTests {
         try {
             userController.update(user2);
         } catch (NotFoundException e) {
-            assertEquals("в базе нет пользователя с таким id", e.getMessage(),
+            assertEquals("Переданный id 0 не корректный", e.getMessage(),
                     "Неверное сохранение на сервер.");
         }
     }

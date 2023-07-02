@@ -1,40 +1,34 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.ErrorException;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
-import ru.yandex.practicum.filmorate.service.storage.UserStorage;
 
 import javax.validation.Valid;
 import java.util.List;
-import java.util.Map;
+
+
+import static ru.yandex.practicum.filmorate.model.ServiceManipulation.*;
 
 
 @RestController
 @Slf4j
 public class UserController {
-
-    UserStorage storage;
     UserService service;
 
-    public UserController(UserStorage storage) {
-        this.storage = storage;
-        this.service = new UserService(storage);
+    public UserController(UserService service) {
+        this.service = service;
     }
 
     @GetMapping("/users")
     public List<User> getUsers() {
-        return storage.getUsers();
+        return service.getUsers();
     }
 
     @GetMapping("/users/{id}")
     public User getUserById(@PathVariable int id) {
-        return storage.getUser(id);
+        return service.getUserById(id);
     }
 
     @GetMapping("/users/{id}/friends")
@@ -44,47 +38,29 @@ public class UserController {
 
     @PostMapping("/users")
     public User add(@Valid @RequestBody User user) {
-        return storage.add(user);
+        return service.add(user);
     }
 
     @PutMapping("/users")
     public User update(@Valid @RequestBody User user) {
-        return storage.update(user);
+        return service.update(user);
     }
 
     @PutMapping("/users/{id}/friends/{friendId}")
     public void addFriend(@PathVariable int id,
                           @PathVariable int friendId) {
-        service.friendManipulating(id, friendId, "add");
+        service.friendManipulating(id, friendId, ADD);
     }
 
     @DeleteMapping("/users/{id}/friends/{friendId}")
     public void deleteFriend(@PathVariable int id,
                              @PathVariable int friendId) {
-        service.friendManipulating(id, friendId, "delete");
+        service.friendManipulating(id, friendId, DELETE);
     }
 
     @GetMapping("/users/{id}/friends/common/{otherId}")
     public List<User> getMutualFriends(@PathVariable int id,
                                        @PathVariable int otherId) {
-       return service.friendManipulating(id, otherId, "mutual");
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> handleNotFoundException(final NotFoundException e) {
-        return Map.of("error", e.getMessage());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleNBadRequestException(final ValidationException e) {
-        return Map.of("error", e.getMessage());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Map<String, String> handleErrorException(final ErrorException e) {
-        return Map.of("error", e.getMessage());
+       return service.friendManipulating(id, otherId, MUTUAL);
     }
 }

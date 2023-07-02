@@ -2,11 +2,13 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.ErrorException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.ServiceManipulation;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.service.storage.UserStorage;
+import ru.yandex.practicum.filmorate.storage.UserStorage;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -22,20 +24,44 @@ public class UserService {
         this.storage = storage;
     }
 
+    public List<User> getUsers() {
+        return storage.getUsers();
+    }
+
+    public User getUserById(int id) {
+        checkId(id);
+
+        return storage.getUser(id);
+    }
+
+    public User add(User user) {
+        checkUserData(user);
+
+        return storage.add(user);
+    }
+
+    public User update(User user) {
+        checkId(user.getId());
+        checkUserData(user);
+
+        return storage.update(user);
+    }
+
+
     public List<User> getUserFriends(int id) {
         List<User> usersFromList = new ArrayList<>();
-        List<Integer> friendList = new ArrayList<>(storage.getUser(id).getFriendList());
 
-        for (int i : friendList) {
+        for (int i : storage.getUser(id).getFriendList()) {
             usersFromList.add(storage.getUser(i));
         }
         log.info("Get friends of user {} ", id);
         return usersFromList;
     }
 
-    public List<User> friendManipulating(int id, int friendId, String manipulation) {
+    public List<User> friendManipulating(int id, int friendId, ServiceManipulation manipulation) {
 
-        checkId(id, friendId);
+        checkId(id);
+        checkId(friendId);
 
         User user = storage.getUser(id);
         User friend = storage.getUser(friendId);
@@ -50,21 +76,21 @@ public class UserService {
             friendFriends = new HashSet<>();
         }
         switch (manipulation) {
-            case "add":
+            case ADD:
                 userFriends.add(friendId);
                 friendFriends.add(id);
                 user.setFriendList(userFriends);
                 friend.setFriendList(friendFriends);
                 log.info("Add friend with id " + friendId + " to user with id " + id);
                 break;
-            case "delete":
+            case DELETE:
                 userFriends.remove(friendId);
                 friendFriends.remove(id);
                 user.setFriendList(userFriends);
                 friend.setFriendList(friendFriends);
                 log.info("Friend with id " + friendId + " was deleted from friends of user with id " + id);
                 break;
-            case "mutual":
+            case MUTUAL:
                 for (int i : userFriends) {
                     if (friendFriends.contains(i)) {
                         mutualFriends.add(storage.getUser(i));
@@ -76,14 +102,23 @@ public class UserService {
         return mutualFriends;
     }
 
-    private void checkId(int id, int friendId) {
-        if (id < 1 && friendId < 1) {
-            log.warn("Один из переданных id некорректный");
-            throw new NotFoundException("Один из переданных id некорректный");
+    private void checkId(int id) {
+        if (storage.getUser(id) == null || id < 1) {
+            log.warn("Переданный id {} не корректный", id);
+            throw new NotFoundException("Переданный id " + id + " не корректный");
         }
-        if (storage.getUser(id) == null && storage.getUser(friendId) == null) {
-            log.warn("Одного из переданных id нет в базе");
-            throw new ErrorException("Одного из переданных id нет в базе");
+    }
+
+    private void checkUserData(User user) {
+        if (user.getLogin().contains(" ")) {
+            throw new ValidationException("логин не может быть пустым и содержать пробелы");
+        }
+        if (user.getBirthday().isAfter(LocalDate.now())) {
+            throw new ValidationException("дата рождения указа некорректно");
+        }
+        if (user.getName() == null || user.getName().isEmpty()) {
+            user.setName(user.getLogin());
+            log.info("Update user name with id {}", user.getId());
         }
     }
 }

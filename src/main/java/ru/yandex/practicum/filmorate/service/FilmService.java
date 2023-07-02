@@ -4,10 +4,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.ErrorException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.service.storage.FilmStorage;
+import ru.yandex.practicum.filmorate.model.ServiceManipulation;
+import ru.yandex.practicum.filmorate.storage.FilmStorage;
 
 import java.util.*;
+
+import static ru.yandex.practicum.filmorate.model.ServiceManipulation.*;
+import static ru.yandex.practicum.filmorate.storage.FilmStorage.FIRST_FILM;
 
 
 @Service
@@ -20,83 +25,120 @@ public class FilmService {
         this.storage = storage;
     }
 
-    public List<Film> filmLikesManipulating(int filmId, int userIdOrCount, String manipulation) {
-        //вместо 3‑х методов 1 со свитчем для читаемости и чтобы не дублировать код.
-        checkId(filmId, userIdOrCount);
+    public List<Film> getFilms() {
+        return storage.getFilms();
+    }
+
+    public Film getFilmById(int id) {
+        checkFilmId(id);
+
+        return storage.getFilm(id);
+    }
+
+    public Film add(Film film) {
+        checkFilmData(film);
+
+        return storage.add(film);
+    }
+
+    public Film update(Film film) {
+        checkFilmId(film.getId());
+        checkFilmData(film);
+
+        return storage.update(film);
+    }
+
+    public void filmLikesManipulating(int filmId, int userId, ServiceManipulation manipulation) {
+        checkFilmId(filmId);
+        checkId(userId);
 
         Film film = storage.getFilm(filmId);
         Set<Integer> likes = film.getLikes();
-        List<Film> popularFilms = new ArrayList<>();
 
         if (likes == null) {
             likes = new HashSet<>();
         }
-        switch (manipulation) {
-            case "add":
-                if (likes.contains(userIdOrCount)) {
-                    log.warn("Пользователь с id " + userIdOrCount + " уже лайкал фильм c id " + filmId);
-                    throw new ErrorException("Пользователь с id " + userIdOrCount + " уже лайкал фильм c id " + filmId);
-                } else {
-                    likes.add(userIdOrCount);
-                    film.setLikes(likes);
-                    log.info("Пользователь с id " + userIdOrCount + " поставил свой царский лайк фильму c id " + filmId);
-                }
-                break;
-            case "delete":
-                if (!likes.contains(userIdOrCount)) {
-                    log.warn("Пользователь с id " + userIdOrCount + " не лайкал фильм c id " + filmId);
-                    throw new ErrorException("Пользователь с id " + userIdOrCount + " не лайкал фильм c id " + filmId);
-                } else {
-                    likes.remove(userIdOrCount);
-                    film.setLikes(likes);
-                    log.info("Пользователь с id " + userIdOrCount + " удалил свой царский лайк у фильма c id " + filmId);
-                }
-                break;
-            case "getPopularFilms":
-
-                Set<Film> set = new TreeSet<>((f1, f2) -> {
-                    int s1;
-                    int s2;
-                    if (f1.getLikes() == null || f1.getLikes().isEmpty()) {
-                        s1 = 0;
-                    } else {
-                        s1 = -(f1.getLikes().size());
-                    }
-                    if (f2.getLikes() == null || f2.getLikes().isEmpty()) {
-                        s2 = 0;
-                    } else {
-                        s2 = -(f2.getLikes().size());
-                    }
-                    if (s1 == s2) { //если результат сравнения равен - запись в сет не происходит,
-                        //поэтому добавил дополнительную сортировку по id
-                        s1 = f1.getId();
-                        s2 = f2.getId();
-                    }
-                    return Integer.compare(s1, s2);
-                });
-                set.addAll(storage.getFilms());
-                for (Film f : set) {
-                    if (popularFilms.size() < userIdOrCount) {
-                        popularFilms.add(f);
-                    } else {
-                        log.info("Количество фильмов больше размера count");
-                        break;
-                    }
-                }
-                log.info("Список популярных фильмов составлен");
-                break;
+        if (manipulation.equals(ADD)) {
+            if (likes.add(userId)) {
+                film.setLikes(likes);
+                log.info("Пользователь с id " + userId + " поставил свой царский лайк фильму c id " + filmId);
+            } else {
+                log.warn("Пользователь с id " + userId + " уже лайкал фильм c id " + filmId);
+                throw new ErrorException("Пользователь с id " + userId + " уже лайкал фильм c id " + filmId);
+            }
+        } else if (manipulation.equals(DELETE)) {
+            if (likes.remove(userId)) {
+                film.setLikes(likes);
+                log.info("Пользователь с id " + userId + " удалил свой царский лайк у фильма c id " + filmId);
+            } else {
+                log.warn("Пользователь с id " + userId + " не лайкал фильм c id " + filmId);
+                throw new ErrorException("Пользователь с id " + userId + " не лайкал фильм c id " + filmId);
+            }
         }
-        return popularFilms;
     }
 
-    private void checkId(int filmId, int userIdOrCount) {
-        if (filmId < 1 | userIdOrCount < 1) {
-            log.warn("Переданный id фильма или пользователя некорректный");
-            throw new NotFoundException("Переданный id фильма или пользователя некорректный");
+    public List<Film> getPopularFilms(int count) {
+
+        List<Film> popularFilms = new ArrayList<>(storage.getFilms());
+
+        popularFilms.sort(new FilmByLikeComparator());
+        log.info("Список популярных фильмов составлен");
+        if (popularFilms.size() <= count) {
+            return popularFilms;
+        } else {
+            return popularFilms.subList(0, count);
         }
-        if (storage.getFilm(filmId) == null) {
+    }
+
+    private void checkFilmId(int id) {
+        checkId(id);
+        if (storage.getFilm(id) == null ) {
             log.warn("Переданного id нет в базе");
             throw new NotFoundException("Переданного id нет в базе");
         }
+    }
+
+    private void checkId(int id) {
+        if (id < 1 ) {
+            log.warn("Переданный id фильма или пользователя некорректный");
+            throw new NotFoundException("Переданный id фильма или пользователя некорректный");
+        }
+    }
+
+    private void checkFilmData(Film film) {
+
+        if (film.getDescription().length() > 200) {
+            throw new ValidationException("максимальная длина описания — 200 символов");
+        }
+        if (film.getReleaseDate().isBefore(FIRST_FILM)) {
+            throw new ValidationException("дата релиза — не раньше 28 декабря 1895 года");
+        }
+        if (film.getDuration() <= 0) {
+            throw new ValidationException("продолжительность фильма должна быть положительной");
+        }
+    }
+}
+
+class FilmByLikeComparator implements Comparator<Film> {
+    @Override
+    public int compare(Film f1, Film f2) {
+        int s1;
+        int s2;
+        if (f1.getLikes() == null || f1.getLikes().isEmpty()) {
+            s1 = 0;
+        } else {
+            s1 = -(f1.getLikes().size());
+        }
+        if (f2.getLikes() == null || f2.getLikes().isEmpty()) {
+            s2 = 0;
+        } else {
+            s2 = -(f2.getLikes().size());
+        }
+        if (s1 == s2) { //если результат сравнения равен — запись в сет не происходит,
+            //поэтому добавил дополнительную сортировку по id
+            s1 = f1.getId();
+            s2 = f2.getId();
+        }
+        return Integer.compare(s1, s2);
     }
 }

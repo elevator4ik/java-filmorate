@@ -7,7 +7,8 @@ import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.service.storage.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.storage.InMemoryFilmStorage;
 
 
 import java.time.LocalDate;
@@ -21,7 +22,7 @@ public class FilmValidationTests {
 
     @BeforeEach
     void creating() {
-        filmController = new FilmController(new InMemoryFilmStorage());
+        filmController = new FilmController(new FilmService(new InMemoryFilmStorage()));
     }
 
     @Test
@@ -108,7 +109,7 @@ public class FilmValidationTests {
         try {
             filmController.update(film2);
         } catch (NotFoundException e) {
-            assertEquals("в базе нет фильма с таким id",
+            assertEquals("Переданного id нет в базе",
                     e.getMessage(), "Неверное сохранение на сервер.");
         }
     }
