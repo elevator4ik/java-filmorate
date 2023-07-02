@@ -3,8 +3,10 @@ package ru.yandex.practicum.filmorate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.controller.UserController;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.storage.InMemoryUserStorage;
 
 
 import java.time.LocalDate;
@@ -19,7 +21,7 @@ public class UserValidationTests {
 
     @BeforeEach
     void creating() {
-        userController = new UserController();
+        userController = new UserController(new InMemoryUserStorage());
     }
 
     @Test
@@ -27,8 +29,8 @@ public class UserValidationTests {
         User user = new User("dolore", "mail@mail.ru", LocalDate.of(1946, Month.AUGUST, 20));
         user.setName("Nick Name");
         userController.add(user);
-        assertEquals("[User(id=1, login=dolore, email=mail@mail.ru, birthday=1946-08-20, name=Nick Name)]",
-                userController.getUsers().toString(), "Неверное сохранение на сервер.");
+        assertEquals("[User(id=1, login=dolore, email=mail@mail.ru, birthday=1946-08-20, name=Nick Name," +
+                " friendList=null)]", userController.getUsers().toString(), "Неверное сохранение на сервер.");
 
     }
 
@@ -58,8 +60,8 @@ public class UserValidationTests {
     void creatingUserWithEmptyName() {
         User user = new User("dolore", "mail@mail.ru", LocalDate.of(1946, Month.AUGUST, 20));
         userController.add(user);
-        assertEquals("[User(id=1, login=dolore, email=mail@mail.ru, birthday=1946-08-20, name=dolore)]",
-                userController.getUsers().toString(), "Неверное сохранение на сервер.");
+        assertEquals("[User(id=1, login=dolore, email=mail@mail.ru, birthday=1946-08-20, name=dolore, " +
+                "friendList=null)]", userController.getUsers().toString(), "Неверное сохранение на сервер.");
 
     }
 
@@ -74,7 +76,7 @@ public class UserValidationTests {
         user2.setId(1);
         userController.update(user2);
         assertEquals("[User(id=1, login=doloreUpdate, email=mail@yandex.ru, birthday=1976-09-20, " +
-                        "name=est adipisicing)]", userController.getUsers().toString(),
+                        "name=est adipisicing, friendList=null)]", userController.getUsers().toString(),
                 "Неверное сохранение на сервер.");
     }
 
@@ -91,7 +93,7 @@ public class UserValidationTests {
         user.setId(9999);
         try {
             userController.update(user2);
-        } catch (ValidationException e) {
+        } catch (NotFoundException e) {
             assertEquals("в базе нет пользователя с таким id", e.getMessage(),
                     "Неверное сохранение на сервер.");
         }

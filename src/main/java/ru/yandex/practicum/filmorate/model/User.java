@@ -6,6 +6,7 @@ import lombok.NonNull;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import java.time.LocalDate;
+import java.util.Set;
 
 @Data
 public class User {
@@ -21,4 +22,5 @@ public class User {
     @NonNull
     private LocalDate birthday;
     private String name;
+    private Set<Integer> friendList;
 }
