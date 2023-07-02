@@ -6,6 +6,7 @@ import ru.yandex.practicum.filmorate.exception.ErrorException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.FilmByLikeComparator;
 import ru.yandex.practicum.filmorate.model.ServiceManipulation;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 
@@ -92,14 +93,14 @@ public class FilmService {
 
     private void checkFilmId(int id) {
         checkId(id);
-        if (storage.getFilm(id) == null ) {
+        if (storage.getFilm(id) == null) {
             log.warn("Переданного id нет в базе");
             throw new NotFoundException("Переданного id нет в базе");
         }
     }
 
     private void checkId(int id) {
-        if (id < 1 ) {
+        if (id < 1) {
             log.warn("Переданный id фильма или пользователя некорректный");
             throw new NotFoundException("Переданный id фильма или пользователя некорректный");
         }
@@ -116,29 +117,5 @@ public class FilmService {
         if (film.getDuration() <= 0) {
             throw new ValidationException("продолжительность фильма должна быть положительной");
         }
-    }
-}
-
-class FilmByLikeComparator implements Comparator<Film> {
-    @Override
-    public int compare(Film f1, Film f2) {
-        int s1;
-        int s2;
-        if (f1.getLikes() == null || f1.getLikes().isEmpty()) {
-            s1 = 0;
-        } else {
-            s1 = -(f1.getLikes().size());
-        }
-        if (f2.getLikes() == null || f2.getLikes().isEmpty()) {
-            s2 = 0;
-        } else {
-            s2 = -(f2.getLikes().size());
-        }
-        if (s1 == s2) { //если результат сравнения равен — запись в сет не происходит,
-            //поэтому добавил дополнительную сортировку по id
-            s1 = f1.getId();
-            s2 = f2.getId();
-        }
-        return Integer.compare(s1, s2);
     }
 }
