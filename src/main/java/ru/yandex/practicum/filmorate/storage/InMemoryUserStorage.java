@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.storage;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.util.ArrayList;
@@ -14,7 +15,7 @@ import java.util.Map;
 public class InMemoryUserStorage implements UserStorage {
 
     private int id = 1; //не задаем в интерфейсе id, т.к. он должен быть изменяемым
-    Map<Integer, User> users = new HashMap<>();
+    private final Map<Integer, User> users = new HashMap<>();
 
     @Override
     public List<User> getUsers() {
@@ -24,6 +25,7 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User getUser(int id) {
+        checkId(id);
         log.info("Get user with id {}", id);
         return users.get(id);
     }
@@ -39,8 +41,16 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User update(User user) {
+        checkId(user.getId());
         users.put(user.getId(), user);
         log.info("Update user with id {}", user.getId());
         return users.get(user.getId());
+    }
+
+    private void checkId(int id) {
+        if (users.get(id) == null || id < 1) {
+            log.warn("Переданный id {} не корректный", id);
+            throw new NotFoundException("Переданный id " + id + " не корректный");
+        }
     }
 }

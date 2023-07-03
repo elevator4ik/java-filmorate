@@ -12,8 +12,8 @@ import ru.yandex.practicum.filmorate.storage.FilmStorage;
 
 import java.util.*;
 
+import static ru.yandex.practicum.filmorate.model.Constants.FIRST_FILM;
 import static ru.yandex.practicum.filmorate.model.ServiceManipulation.*;
-import static ru.yandex.practicum.filmorate.storage.FilmStorage.FIRST_FILM;
 
 
 @Service
@@ -31,8 +31,6 @@ public class FilmService {
     }
 
     public Film getFilmById(int id) {
-        checkFilmId(id);
-
         return storage.getFilm(id);
     }
 
@@ -43,15 +41,13 @@ public class FilmService {
     }
 
     public Film update(Film film) {
-        checkFilmId(film.getId());
         checkFilmData(film);
 
         return storage.update(film);
     }
 
     public void filmLikesManipulating(int filmId, int userId, ServiceManipulation manipulation) {
-        checkFilmId(filmId);
-        checkId(userId);
+        checkUserId(userId);
 
         Film film = storage.getFilm(filmId);
         Set<Integer> likes = film.getLikes();
@@ -91,15 +87,7 @@ public class FilmService {
         }
     }
 
-    private void checkFilmId(int id) {
-        checkId(id);
-        if (storage.getFilm(id) == null) {
-            log.warn("Переданного id нет в базе");
-            throw new NotFoundException("Переданного id нет в базе");
-        }
-    }
-
-    private void checkId(int id) {
+    private void checkUserId(int id) {
         if (id < 1) {
             log.warn("Переданный id фильма или пользователя некорректный");
             throw new NotFoundException("Переданный id фильма или пользователя некорректный");

@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.ServiceManipulation;
 import ru.yandex.practicum.filmorate.model.User;
@@ -29,8 +28,6 @@ public class UserService {
     }
 
     public User getUserById(int id) {
-        checkId(id);
-
         return storage.getUser(id);
     }
 
@@ -41,7 +38,6 @@ public class UserService {
     }
 
     public User update(User user) {
-        checkId(user.getId());
         checkUserData(user);
 
         return storage.update(user);
@@ -59,9 +55,6 @@ public class UserService {
     }
 
     public List<User> friendManipulating(int id, int friendId, ServiceManipulation manipulation) {
-
-        checkId(id);
-        checkId(friendId);
 
         User user = storage.getUser(id);
         User friend = storage.getUser(friendId);
@@ -100,13 +93,6 @@ public class UserService {
                 break;
         }
         return mutualFriends;
-    }
-
-    private void checkId(int id) {
-        if (storage.getUser(id) == null || id < 1) {
-            log.warn("Переданный id {} не корректный", id);
-            throw new NotFoundException("Переданный id " + id + " не корректный");
-        }
     }
 
     private void checkUserData(User user) {

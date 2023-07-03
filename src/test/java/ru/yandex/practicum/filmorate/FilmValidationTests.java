@@ -108,7 +108,7 @@ public class FilmValidationTests {
         try {
             filmController.update(film2);
         } catch (NotFoundException e) {
-            assertEquals("Переданного id нет в базе",
+            assertEquals("Переданный id 999 не корректный",
                     e.getMessage(), "Неверное сохранение на сервер.");
         }
     }
