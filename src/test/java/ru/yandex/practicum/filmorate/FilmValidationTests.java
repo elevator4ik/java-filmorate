@@ -4,9 +4,11 @@ package ru.yandex.practicum.filmorate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.controller.FilmController;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-
+import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.storage.InMemoryFilmStorage;
 
 import java.time.LocalDate;
 import java.time.Month;
@@ -19,7 +21,7 @@ public class FilmValidationTests {
 
     @BeforeEach
     void creating() {
-        filmController = new FilmController();
+        filmController = new FilmController(new FilmService(new InMemoryFilmStorage()));
     }
 
     @Test
@@ -29,8 +31,9 @@ public class FilmValidationTests {
 
         filmController.add(film);
 
-        assertEquals("[Film(id=1, name=nisi eiusmod, description=adipisicing, releaseDate=1946-08-20, " +
-                "duration=100)]", filmController.getFilms().toString(), "Неверное сохранение на сервер.");
+        assertEquals("[Film(id=1, name=nisi eiusmod, description=adipisicing, " +
+                        "releaseDate=1946-08-20, duration=100, likes=null)]", filmController.getFilms().toString(),
+                "Неверное сохранение на сервер.");
     }
 
     @Test
@@ -86,8 +89,9 @@ public class FilmValidationTests {
         film2.setId(1);
         filmController.update(film2);
 
-        assertEquals("[Film(id=1, name=nisiki eiusmod, description=adipisicing wrong, releaseDate=1996-09-20, " +
-                        "duration=1100)]", filmController.getFilms().toString(), "Неверное сохранение на сервер.");
+        assertEquals("[Film(id=1, name=nisiki eiusmod, description=adipisicing wrong," +
+                        " releaseDate=1996-09-20, duration=1100, likes=null)]", filmController.getFilms().toString(),
+                "Неверное сохранение на сервер.");
     }
 
     @Test
@@ -103,8 +107,8 @@ public class FilmValidationTests {
 
         try {
             filmController.update(film2);
-        } catch (ValidationException e) {
-            assertEquals("в базе нет фильма с таким id",
+        } catch (NotFoundException e) {
+            assertEquals("Переданный id 999 не корректный",
                     e.getMessage(), "Неверное сохранение на сервер.");
         }
     }
