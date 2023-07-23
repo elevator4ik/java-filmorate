@@ -1,93 +1,205 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dao.interfaces.*;
 import ru.yandex.practicum.filmorate.exception.ErrorException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.FilmByLikeComparator;
-import ru.yandex.practicum.filmorate.model.ServiceManipulation;
-import ru.yandex.practicum.filmorate.storage.FilmStorage;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Mpa;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import static ru.yandex.practicum.filmorate.model.Constants.FIRST_FILM;
-import static ru.yandex.practicum.filmorate.model.ServiceManipulation.*;
 
 
 @Service
 @Slf4j
+@AllArgsConstructor
 public class FilmService {
 
-    FilmStorage storage;
+    final MpaFilmRepository mpaFilmRepository;
+    final MPACategoryRepository mpaCategoryRepository;
+    final FilmGenreRepository filmGenreRepository;
+    final GenreRepository genreRepository;
+    final LikesRepository likesRepository;
+    final FilmRepository filmRepository;
 
-    public FilmService(FilmStorage storage) {
-        this.storage = storage;
+
+    public List<Genre> getGenres() {
+        return genreRepository.getGenres();
+    }
+
+    public Genre getGenreByID(int id) {
+        return genreRepository.getGenre(id);
+    }
+
+    public List<Mpa> getMpas() {
+        return mpaCategoryRepository.getMpaCategories();
+    }
+
+    public Mpa getMpaById(int id) {
+        return mpaCategoryRepository.getMpaCategory(id);
     }
 
     public List<Film> getFilms() {
-        return storage.getFilms();
+        List<Film> films = filmRepository.getFilms();
+        setMpaToFilms(films);
+        setGenresToFilms(films);
+        return films;
     }
 
     public Film getFilmById(int id) {
-        return storage.getFilm(id);
+
+        Film film = filmRepository.getFilm(id);
+        setMpaToFilms(List.of(film));
+        setGenresToFilms(List.of(film));
+        return film;
     }
 
     public Film add(Film film) {
         checkFilmData(film);
-
-        return storage.add(film);
+        filmRepository.add(film);
+        List<Genre> list = film.getGenres();
+        Mpa mpa = film.getMpa();
+        if (mpa != null) {
+            mpaFilmRepository.addMpaToFilm(film);
+        }
+        if (list != null && !list.isEmpty()) {
+            for (Genre g : list) {
+                filmGenreRepository.addGenreToFilm(film.getId(), g.getId());
+            }
+        }
+        return film;
     }
 
     public Film update(Film film) {
         checkFilmData(film);
-
-        return storage.update(film);
+        checkUpdate(film.getId());
+        filmRepository.update(film);
+        updateMpaInFilm(film);
+        updateGenreInFilm(film);
+        return getFilmById(film.getId());
     }
 
-    public void filmLikesManipulating(int filmId, int userId, ServiceManipulation manipulation) {
-        checkUserId(userId);
+    public void addLikeToFilm(int filmId, int userId) {
+        checkId(userId);
 
-        Film film = storage.getFilm(filmId);
-        Set<Integer> likes = film.getLikes();
+        List<Integer> likes = likesRepository.getFilmLikes(filmId);
 
-        if (likes == null) {
-            likes = new HashSet<>();
+        if (likes.contains(userId)) {
+            log.warn("Пользователь с id " + userId + " уже лайкал фильм c id " + filmId);
+            throw new ErrorException("Пользователь с id " + userId + " уже лайкал фильм c id " + filmId);
+        } else {
+            likesRepository.addLike(filmId, userId);
+            log.info("Пользователь с id " + userId + " поставил свой царский лайк фильму c id " + filmId);
         }
-        if (manipulation.equals(ADD)) {
-            if (likes.add(userId)) {
-                film.setLikes(likes);
-                log.info("Пользователь с id " + userId + " поставил свой царский лайк фильму c id " + filmId);
-            } else {
-                log.warn("Пользователь с id " + userId + " уже лайкал фильм c id " + filmId);
-                throw new ErrorException("Пользователь с id " + userId + " уже лайкал фильм c id " + filmId);
-            }
-        } else if (manipulation.equals(DELETE)) {
-            if (likes.remove(userId)) {
-                film.setLikes(likes);
-                log.info("Пользователь с id " + userId + " удалил свой царский лайк у фильма c id " + filmId);
-            } else {
-                log.warn("Пользователь с id " + userId + " не лайкал фильм c id " + filmId);
-                throw new ErrorException("Пользователь с id " + userId + " не лайкал фильм c id " + filmId);
-            }
+    }
+
+    public void deleteLikeFromFilm(int filmId, int userId) {
+        checkId(userId);
+
+        List<Integer> likes = likesRepository.getFilmLikes(filmId);
+
+        if (likes.contains(userId)) {
+            log.info("Пользователь с id " + userId + " удалил свой царский лайк у фильма c id " + filmId);
+        } else {
+            log.warn("Пользователь с id " + userId + " не лайкал фильм c id " + filmId);
+            throw new ErrorException("Пользователь с id " + userId + " не лайкал фильм c id " + filmId);
         }
+
     }
 
     public List<Film> getPopularFilms(int count) {
 
-        List<Film> popularFilms = new ArrayList<>(storage.getFilms());
-
+        List<Film> popularFilms = getFilms();
         popularFilms.sort(new FilmByLikeComparator());
+
+
+        if (popularFilms.size() > count) {
+            popularFilms = popularFilms.subList(0, count);
+        }
         log.info("Список популярных фильмов составлен");
-        if (popularFilms.size() <= count) {
-            return popularFilms;
-        } else {
-            return popularFilms.subList(0, count);
+        return popularFilms;
+    }
+
+    private void setMpaToFilms(List<Film> films) {
+        for (Film f : films) {
+            f.setMpa(mpaCategoryRepository.getMpaCategory(mpaFilmRepository.getFilmMpa(f.getId())));
         }
     }
 
-    private void checkUserId(int id) {
+    private void setGenresToFilms(List<Film> films) {
+        for (Film f : films) {
+            List<Genre> genres = new ArrayList<>();
+            for (int i : filmGenreRepository.getFilmGenres(f.getId())) {
+                genres.add(genreRepository.getGenre(i));
+            }
+            f.setGenres(genres);
+        }
+    }
+
+    private void updateMpaInFilm(Film film) {
+        if (film.getMpa() != null && film.getMpa().getId() != mpaFilmRepository.getFilmMpa(film.getId())) {
+            mpaFilmRepository.deleteMpaFromFilm(film);
+            mpaFilmRepository.addMpaToFilm(film);
+        }
+    }
+
+    private void updateGenreInFilm(Film film) {
+        List<Integer> genreList = filmGenreRepository.getFilmGenres(film.getId());
+        List<Genre> filmGenres = film.getGenres();
+        List<Integer> genresInt = new ArrayList<>();
+
+        if (genreList != null && !genreList.isEmpty()) {//не пусто из бд
+            if (filmGenres != null && !filmGenres.isEmpty()) {//не пусто из фильма
+                for (Genre g : filmGenres) {
+                    writingGenresInt(g, genresInt);
+                    if (!genreList.contains(g.getId())) {
+                        writingToFGRRepo(film, g, genreList);
+                    }
+                }
+            } else {//пусто из фильма
+                for (int i : genreList) {
+                    filmGenreRepository.deleteGenreFromFilm(film.getId(), i);
+                }
+            }
+        } else if (filmGenres != null && !filmGenres.isEmpty()) {//пусто из бд, не пусто из фильма
+            for (Genre g : filmGenres) {
+                writingGenresInt(g, genresInt);
+                if (genreList == null) {//чтобы прошла первая запись
+                    writingToFGRRepo(film, g, genreList);
+                } else if (!genreList.contains(g.getId())) {
+                    writingToFGRRepo(film, g, genreList);
+                }
+            }
+        }
+        if (genreList != null) {
+            for (int i : genreList) {//удаляем ненужные жанры
+                if (!genresInt.contains(i)) {
+                    filmGenreRepository.deleteGenreFromFilm(film.getId(), i);
+                }
+            }
+        }
+    }
+
+    private void writingGenresInt(Genre g, List<Integer> genresInt) {
+        if (!genresInt.contains(g.getId())) {
+            genresInt.add(g.getId());
+        }
+    }
+
+    private void writingToFGRRepo(Film film, Genre g, List<Integer> genreList) {
+        filmGenreRepository.addGenreToFilm(film.getId(), g.getId());
+        genreList = filmGenreRepository.getFilmGenres(film.getId());//для обхода дубликатов
+    }
+
+    private void checkId(int id) {
         if (id < 1) {
             log.warn("Переданный id фильма или пользователя некорректный");
             throw new NotFoundException("Переданный id фильма или пользователя некорректный");
@@ -104,6 +216,21 @@ public class FilmService {
         }
         if (film.getDuration() <= 0) {
             throw new ValidationException("продолжительность фильма должна быть положительной");
+        }
+    }
+
+    private void checkUpdate(int id) {
+        checkId(id);
+        Film film = null;
+        for (Film f : getFilms()) {
+            if (id == f.getId()) {
+                film = f;
+                break;
+            }
+        }
+        if (film == null) {
+            log.warn("Переданного id {} нет в базе", id);
+            throw new NotFoundException("Переданного id " + id + " нет в базе");
         }
     }
 }
