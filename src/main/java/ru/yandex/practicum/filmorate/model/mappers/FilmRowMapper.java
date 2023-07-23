@@ -27,7 +27,6 @@ public class FilmRowMapper implements RowMapper<Film> {
                 rs.getString("FILM_DESCRIPTION"),
                 rs.getDate("RELEASE_DATE").toLocalDate(),
                 rs.getInt("DURATION"),
-                //genreRepository.findByIds(filmGenreRepository.getFilmGenres(rs.getInt("FILM_ID"))),
                 likesRepository.getCountFilmLikes(rs.getInt("FILM_ID"))
         );
     }

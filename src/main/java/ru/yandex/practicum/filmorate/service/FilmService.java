@@ -156,23 +156,23 @@ public class FilmService {
         List<Genre> filmGenres = film.getGenres();
         List<Integer> genresInt = new ArrayList<>();
 
-        if (genreList != null && !genreList.isEmpty()) {//не пусто из бд
-            if (filmGenres != null && !filmGenres.isEmpty()) {//не пусто из фильма
+        if (genreList != null && !genreList.isEmpty()) { //не пусто из бд
+            if (filmGenres != null && !filmGenres.isEmpty()) { //не пусто из фильма
                 for (Genre g : filmGenres) {
                     writingGenresInt(g, genresInt);
                     if (!genreList.contains(g.getId())) {
                         writingToFGRRepo(film, g, genreList);
                     }
                 }
-            } else {//пусто из фильма
+            } else { //пусто из фильма
                 for (int i : genreList) {
                     filmGenreRepository.deleteGenreFromFilm(film.getId(), i);
                 }
             }
-        } else if (filmGenres != null && !filmGenres.isEmpty()) {//пусто из бд, не пусто из фильма
+        } else if (filmGenres != null && !filmGenres.isEmpty()) { //пусто из бд, не пусто из фильма
             for (Genre g : filmGenres) {
                 writingGenresInt(g, genresInt);
-                if (genreList == null) {//чтобы прошла первая запись
+                if (genreList == null) { //чтобы прошла первая запись
                     writingToFGRRepo(film, g, genreList);
                 } else if (!genreList.contains(g.getId())) {
                     writingToFGRRepo(film, g, genreList);
@@ -180,7 +180,7 @@ public class FilmService {
             }
         }
         if (genreList != null) {
-            for (int i : genreList) {//удаляем ненужные жанры
+            for (int i : genreList) { //удаляем ненужные жанры
                 if (!genresInt.contains(i)) {
                     filmGenreRepository.deleteGenreFromFilm(film.getId(), i);
                 }
@@ -196,7 +196,7 @@ public class FilmService {
 
     private void writingToFGRRepo(Film film, Genre g, List<Integer> genreList) {
         filmGenreRepository.addGenreToFilm(film.getId(), g.getId());
-        genreList = filmGenreRepository.getFilmGenres(film.getId());//для обхода дубликатов
+        genreList = filmGenreRepository.getFilmGenres(film.getId()); //для обхода дубликатов
     }
 
     private void checkId(int id) {

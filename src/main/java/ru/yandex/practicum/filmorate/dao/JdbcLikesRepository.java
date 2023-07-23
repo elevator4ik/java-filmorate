@@ -30,7 +30,7 @@ public class JdbcLikesRepository implements LikesRepository {
     }
 
     @Override
-    public List<Integer> getFilmLikes(int filmId) {//тут берем все user_id тех, кто лайкал
+    public List<Integer> getFilmLikes(int filmId) { //тут берем все user_id тех, кто лайкал
         final String sqlQuery = "SELECT USER_ID " +
                 "FROM LIKES " +
                 "WHERE FILM_ID = :filmId";
@@ -38,7 +38,7 @@ public class JdbcLikesRepository implements LikesRepository {
     }
 
     @Override
-    public int getCountFilmLikes(int filmId) {//тут берем просто количество лайков
+    public int getCountFilmLikes(int filmId) { //тут берем просто количество лайков
         final String sqlQuery = "SELECT COUNT(LIKE_ID) AS USER_ID " +//чтобы маппер проглотил
                 "FROM LIKES " +
                 "WHERE FILM_ID = :filmId";

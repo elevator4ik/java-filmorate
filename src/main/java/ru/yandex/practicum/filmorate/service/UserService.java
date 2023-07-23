@@ -51,9 +51,7 @@ public class UserService {
 
     public void addFriend(int id, int friendId) {
 
-        if (userRepository.getUser(id) != null & userRepository.getUser(friendId) != null) {//ничего выкидывать не нужно,
-            // при выполнении getUser() выскочит ошибка, если в базе нет юзера
-
+        if (userRepository.getUser(id) != null & userRepository.getUser(friendId) != null) {
             friendsRepository.setFriends(id, friendId);
             log.info("Add friend with id " + friendId + " to user with id " + id);
         }
