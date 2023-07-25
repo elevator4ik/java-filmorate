@@ -5,7 +5,9 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.dao.interfaces.FilmGenreRepository;
-import ru.yandex.practicum.filmorate.model.mappers.GenreIdRowMapper;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.mappers.AllFilmsGenresExtractor;
+import ru.yandex.practicum.filmorate.model.mappers.FilmGenresExtractor;
 
 import java.util.List;
 import java.util.Map;
@@ -39,9 +41,23 @@ public class JdbcFilmGenreRepository implements FilmGenreRepository {
     }
 
     @Override
-    public List<Integer> getFilmGenres(int filmId) {
+    public List<Genre> getFilmGenres(int filmId) {
 
-        final String sqlQuery = "SELECT GENRE_ID FROM FILM_GENRES WHERE FILM_ID = :filmId ";
-        return jdbcOperations.query(sqlQuery, Map.of("filmId", filmId), new GenreIdRowMapper());
+        final String sqlQuery = "SELECT G.GENRE_ID, G.GENRE_NAME " +
+                "FROM GENRES AS G " +
+                "JOIN (SELECT GENRE_ID " +
+                "FROM FILM_GENRES " +
+                "WHERE FILM_ID = :filmId " +
+                ") AS FG ON G.GENRE_ID = FG.GENRE_ID";
+        return jdbcOperations.query(sqlQuery, Map.of("filmId", filmId), new FilmGenresExtractor());
+    }
+
+    @Override
+    public Map<Integer, List<Genre>> getAllFilmsGenres() {
+
+        final String sqlQuery = "SELECT FG.FILM_ID, G.GENRE_ID, G.GENRE_NAME " +
+                "FROM GENRES AS G " +
+                "JOIN FILM_GENRES AS FG ON G.GENRE_ID = FG.GENRE_ID";
+        return jdbcOperations.query(sqlQuery, new AllFilmsGenresExtractor());
     }
 }

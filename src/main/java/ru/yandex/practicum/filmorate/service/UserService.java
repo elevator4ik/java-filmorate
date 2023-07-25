@@ -53,14 +53,14 @@ public class UserService {
 
         if (userRepository.getUser(id) != null & userRepository.getUser(friendId) != null) {
             friendsRepository.setFriends(id, friendId);
-            log.info("Add friend with id " + friendId + " to user with id " + id);
+            log.info("Add friend with id {} to user with id {}", friendId, id);
         }
     }
 
     public void deleteFriend(int id, int friendId) {
 
         friendsRepository.deleteFriends(id, friendId);
-        log.info("User with id " + friendId + " no more hobnob with user with id " + id);
+        log.info("User with id {} no more hobnob with user with id {}", friendId, id);
 
     }
 
@@ -72,7 +72,7 @@ public class UserService {
         for (int i : mutualFriendsInt) {
             mutualFriends.add(getUserById(i));
         }
-        log.info("Get mutual friends of user with id " + id + " and " + friendId);
+        log.info("Get mutual friends of user with id {} and {}", id, friendId);
 
         return mutualFriends;
     }

@@ -12,8 +12,10 @@ import ru.yandex.practicum.filmorate.model.FilmByLikeComparator;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static ru.yandex.practicum.filmorate.model.Constants.FIRST_FILM;
 
@@ -48,17 +50,29 @@ public class FilmService {
     }
 
     public List<Film> getFilms() {
+
         List<Film> films = filmRepository.getFilms();
-        setMpaToFilms(films);
-        setGenresToFilms(films);
+        Map<Integer, Mpa> list = mpaCategoryRepository.getAllFilmsMpaCategories();
+        Map<Integer, List<Genre>> genres = filmGenreRepository.getAllFilmsGenres();
+        List<Genre> genresForWrite; //без этого пишется null и постман выкидывает ошибку в тестах
+        for (Film f : films) {
+            f.setMpa(list.get(f.getId()));
+            genresForWrite = genres.get(f.getId());
+            if (genresForWrite != null) {
+                f.setGenres(genresForWrite);
+            } else {
+                genresForWrite = new ArrayList<>();
+                f.setGenres(genresForWrite);
+            }
+        }
         return films;
     }
 
     public Film getFilmById(int id) {
 
         Film film = filmRepository.getFilm(id);
-        setMpaToFilms(List.of(film));
-        setGenresToFilms(List.of(film));
+        film.setMpa(mpaCategoryRepository.getFilmMpaCategory(id));
+        film.setGenres(filmGenreRepository.getFilmGenres(id));
         return film;
     }
 
@@ -84,42 +98,38 @@ public class FilmService {
         filmRepository.update(film);
         updateMpaInFilm(film);
         updateGenreInFilm(film);
+        log.info("Фильм с id {} обновлен", film.getId());
         return getFilmById(film.getId());
     }
 
     public void addLikeToFilm(int filmId, int userId) {
         checkId(userId);
 
-        List<Integer> likes = likesRepository.getFilmLikes(filmId);
-
-        if (likes.contains(userId)) {
-            log.warn("Пользователь с id " + userId + " уже лайкал фильм c id " + filmId);
-            throw new ErrorException("Пользователь с id " + userId + " уже лайкал фильм c id " + filmId);
-        } else {
+        try {
             likesRepository.addLike(filmId, userId);
-            log.info("Пользователь с id " + userId + " поставил свой царский лайк фильму c id " + filmId);
+            log.info("Пользователь с id {} поставил свой царский лайк фильму c id {}", userId, filmId);
+        } catch (SQLException e) {
+            log.warn("Пользователь с id {} уже лайкал фильм c id {}", userId, filmId);
+            throw new ErrorException("Пользователь с id " + userId + " уже лайкал фильм c id " + filmId);
         }
     }
 
     public void deleteLikeFromFilm(int filmId, int userId) {
         checkId(userId);
 
-        List<Integer> likes = likesRepository.getFilmLikes(filmId);
-
-        if (likes.contains(userId)) {
-            log.info("Пользователь с id " + userId + " удалил свой царский лайк у фильма c id " + filmId);
-        } else {
-            log.warn("Пользователь с id " + userId + " не лайкал фильм c id " + filmId);
+        try {
+            likesRepository.deleteLike(filmId, userId);
+            log.info("Пользователь с id {} удалил свой царский лайк у фильма c id {}", userId, filmId);
+        } catch (SQLException e) {
+            log.warn("Пользователь с id {} не лайкал фильм c id {}", userId, filmId);
             throw new ErrorException("Пользователь с id " + userId + " не лайкал фильм c id " + filmId);
         }
-
     }
 
     public List<Film> getPopularFilms(int count) {
 
         List<Film> popularFilms = getFilms();
         popularFilms.sort(new FilmByLikeComparator());
-
 
         if (popularFilms.size() > count) {
             popularFilms = popularFilms.subList(0, count);
@@ -128,75 +138,56 @@ public class FilmService {
         return popularFilms;
     }
 
-    private void setMpaToFilms(List<Film> films) {
-        for (Film f : films) {
-            f.setMpa(mpaCategoryRepository.getMpaCategory(mpaFilmRepository.getFilmMpa(f.getId())));
-        }
-    }
-
-    private void setGenresToFilms(List<Film> films) {
-        for (Film f : films) {
-            List<Genre> genres = new ArrayList<>();
-            for (int i : filmGenreRepository.getFilmGenres(f.getId())) {
-                genres.add(genreRepository.getGenre(i));
-            }
-            f.setGenres(genres);
-        }
-    }
-
     private void updateMpaInFilm(Film film) {
-        if (film.getMpa() != null && film.getMpa().getId() != mpaFilmRepository.getFilmMpa(film.getId())) {
+        if (film.getMpa() != null) {
             mpaFilmRepository.deleteMpaFromFilm(film);
             mpaFilmRepository.addMpaToFilm(film);
         }
     }
 
     private void updateGenreInFilm(Film film) {
-        List<Integer> genreList = filmGenreRepository.getFilmGenres(film.getId());
+        List<Genre> genreList = filmGenreRepository.getFilmGenres(film.getId());
         List<Genre> filmGenres = film.getGenres();
-        List<Integer> genresInt = new ArrayList<>();
+        List<Integer> genreListIds = new ArrayList<>();
+        List<Integer> filmGenresIds = new ArrayList<>();
 
-        if (genreList != null && !genreList.isEmpty()) { //не пусто из бд
-            if (filmGenres != null && !filmGenres.isEmpty()) { //не пусто из фильма
-                for (Genre g : filmGenres) {
-                    writingGenresInt(g, genresInt);
-                    if (!genreList.contains(g.getId())) {
-                        writingToFGRRepo(film, g, genreList);
+        for (Genre g : genreList) {
+            genreListIds.add(g.getId());
+        }
+        if (filmGenres != null) {
+            for (Genre g : filmGenres) {
+                filmGenresIds.add(g.getId());
+            }
+        } else {
+            deleteGenreList(film, genreList);
+        }
+        if (!filmGenresIds.isEmpty()) {
+            if (genreListIds.isEmpty()) {
+                for (int i : filmGenresIds) {
+                    filmGenreRepository.addGenreToFilm(film.getId(), i);
+                }
+            } else {
+                for (int i : filmGenresIds) {
+                    if (!genreListIds.contains(i)) {
+                        filmGenreRepository.addGenreToFilm(film.getId(), i);
                     }
                 }
-            } else { //пусто из фильма
-                for (int i : genreList) {
-                    filmGenreRepository.deleteGenreFromFilm(film.getId(), i);
+                for (int i : genreListIds) {
+                    if (!filmGenresIds.contains(i)) {
+                        filmGenreRepository.deleteGenreFromFilm(film.getId(), i);
+                    }
                 }
             }
-        } else if (filmGenres != null && !filmGenres.isEmpty()) { //пусто из бд, не пусто из фильма
-            for (Genre g : filmGenres) {
-                writingGenresInt(g, genresInt);
-                if (genreList == null) { //чтобы прошла первая запись
-                    writingToFGRRepo(film, g, genreList);
-                } else if (!genreList.contains(g.getId())) {
-                    writingToFGRRepo(film, g, genreList);
-                }
-            }
-        }
-        if (genreList != null) {
-            for (int i : genreList) { //удаляем ненужные жанры
-                if (!genresInt.contains(i)) {
-                    filmGenreRepository.deleteGenreFromFilm(film.getId(), i);
-                }
-            }
+        } else {
+            deleteGenreList(film, genreList);
         }
     }
 
-    private void writingGenresInt(Genre g, List<Integer> genresInt) {
-        if (!genresInt.contains(g.getId())) {
-            genresInt.add(g.getId());
-        }
-    }
 
-    private void writingToFGRRepo(Film film, Genre g, List<Integer> genreList) {
-        filmGenreRepository.addGenreToFilm(film.getId(), g.getId());
-        genreList = filmGenreRepository.getFilmGenres(film.getId()); //для обхода дубликатов
+    private void deleteGenreList(Film film, List<Genre> genreList) {
+        for (Genre g : genreList) {
+            filmGenreRepository.deleteGenreFromFilm(film.getId(), g.getId());
+        }
     }
 
     private void checkId(int id) {
@@ -207,7 +198,6 @@ public class FilmService {
     }
 
     private void checkFilmData(Film film) {
-
         if (film.getDescription().length() > 200) {
             throw new ValidationException("максимальная длина описания — 200 символов");
         }
@@ -222,7 +212,8 @@ public class FilmService {
     private void checkUpdate(int id) {
         checkId(id);
         Film film = null;
-        for (Film f : getFilms()) {
+        List<Film> films = getFilms();
+        for (Film f : films) {
             if (id == f.getId()) {
                 film = f;
                 break;

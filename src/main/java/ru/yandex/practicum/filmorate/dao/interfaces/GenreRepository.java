@@ -12,6 +12,4 @@ public interface GenreRepository {
     Genre getGenre(int i);
 
     List<Genre> getGenres();
-
-    List<Genre> findByIds(List<Integer> ids);
 }

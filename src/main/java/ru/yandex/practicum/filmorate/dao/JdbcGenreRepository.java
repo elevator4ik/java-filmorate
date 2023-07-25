@@ -9,7 +9,6 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.mappers.GenreRowMapper;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -47,19 +46,5 @@ public class JdbcGenreRepository implements GenreRepository {
 
         final String sqlQuery = "SELECT * FROM GENRES";
         return jdbcOperations.query(sqlQuery, new GenreRowMapper());
-    }
-
-    @Override
-    public List<Genre> findByIds(List<Integer> ids) {
-
-        final String sqlQuery = "SELECT * FROM GENRES";
-        List<Genre> list = jdbcOperations.query(sqlQuery, new GenreRowMapper());
-        List<Genre> genres = new ArrayList<>();
-        for (Genre g : list) {
-            if (ids.contains(g.getId())) {
-                genres.add(g);
-            }
-        }
-        return genres;
     }
 }

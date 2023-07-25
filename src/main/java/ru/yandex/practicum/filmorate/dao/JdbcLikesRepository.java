@@ -39,7 +39,7 @@ public class JdbcLikesRepository implements LikesRepository {
 
     @Override
     public int getCountFilmLikes(int filmId) { //тут берем просто количество лайков
-        final String sqlQuery = "SELECT COUNT(LIKE_ID) AS USER_ID " + //чтобы маппер проглотил
+        final String sqlQuery = "SELECT COUNT(USER_ID) AS USER_ID " + //чтобы маппер проглотил
                 "FROM LIKES " +
                 "WHERE FILM_ID = :filmId";
         List<Integer> list = jdbcOperations.query(sqlQuery, Map.of("filmId", filmId), new LikesRowMapper());
