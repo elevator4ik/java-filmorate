@@ -52,7 +52,8 @@ public class FilmService {
     public List<Film> getFilms() {
 
         List<Film> films = filmRepository.getFilms();
-        getMpaAndGenreInFilms(films);
+        Map<Integer, List<Genre>> genres = filmGenreRepository.getAllFilmsGenres();
+        getMpaAndGenreInFilms(films, genres);
         return films;
     }
 
@@ -117,25 +118,24 @@ public class FilmService {
     public List<Film> getPopularFilms(int count) {
 
         List<Film> popularFilms = filmRepository.getFilmsByLikes(count);
-        System.out.println("\n" + popularFilms + "\n");
+        Map<Integer, List<Genre>> genres = filmGenreRepository.getAllFilmsGenres();
 
         if (popularFilms != null && !popularFilms.isEmpty()) {
-            getMpaAndGenreInFilms(popularFilms);
+            getMpaAndGenreInFilms(popularFilms, genres);
         } else {
             popularFilms = filmRepository.getFilms();
             popularFilms.sort(new FilmByLikeComparator());
-            getMpaAndGenreInFilms(popularFilms);
+            getMpaAndGenreInFilms(popularFilms, genres);
         }
 
         log.info("Список популярных фильмов составлен");
         return popularFilms;
     }
 
-    private void getMpaAndGenreInFilms(List<Film> films) {
+    private void getMpaAndGenreInFilms(List<Film> films, Map<Integer, List<Genre>> genres) {
 
         Map<Integer, Mpa> list = mpaCategoryRepository.getAllFilmsMpaCategories(); // объем выгружаемых данных ограничен,
         // , поэтому смело можно выгружать все значения
-        Map<Integer, List<Genre>> genres = filmGenreRepository.getAllFilmsGenres(); // аналогично
         List<Genre> genresForWrite; //без этого пишется null и постман выкидывает ошибку в тестах
         for (Film f : films) {
             f.setMpa(list.get(f.getId()));

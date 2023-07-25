@@ -15,4 +15,6 @@ public interface FilmGenreRepository {
     List<Genre> getFilmGenres(int i);
 
     Map<Integer, List<Genre>> getAllFilmsGenres();
+
+    Map<Integer, List<Genre>> getFilmGenresByLikes(int count);
 }

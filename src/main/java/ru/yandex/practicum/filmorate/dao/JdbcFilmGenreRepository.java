@@ -60,4 +60,19 @@ public class JdbcFilmGenreRepository implements FilmGenreRepository {
                 "JOIN FILM_GENRES AS FG ON G.GENRE_ID = FG.GENRE_ID";
         return jdbcOperations.query(sqlQuery, new AllFilmsGenresExtractor());
     }
+
+    @Override
+    public Map<Integer, List<Genre>> getFilmGenresByLikes(int count) {
+
+        final String sqlQuery = "SELECT G.GENRE_ID, G.GENRE_NAME " +
+                "FROM GENRES AS G " +
+                "JOIN (SELECT GENRE_ID " +
+                "FROM FILM_GENRES " +
+                "WHERE FILM_ID IN (SELECT O.FILM_ID " +
+                "FROM (SELECT FILM_ID, COUNT(USER_ID) AS COUNT " +
+                "FROM LIKES " +
+                "GROUP BY FILM_ID) AS O " +
+                "WHERE COUNT <= :count)) AS FG ON G.GENRE_ID = FG.GENRE_ID";
+        return jdbcOperations.query(sqlQuery, Map.of("count", count), new AllFilmsGenresExtractor());
+    }
 }
