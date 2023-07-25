@@ -1,5 +1,7 @@
 package ru.yandex.practicum.filmorate.dao.interfaces;
 
+import ru.yandex.practicum.filmorate.model.User;
+
 import java.util.List;
 
 public interface FriendsRepository {
@@ -10,5 +12,5 @@ public interface FriendsRepository {
 
     void deleteFriends(int userId, int friendId);
 
-    List<Integer> mutualFriends(int id, int friendId);
+    List<User> mutualFriends(int id, int friendId);
 }

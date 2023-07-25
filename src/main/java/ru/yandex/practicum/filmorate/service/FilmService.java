@@ -52,19 +52,7 @@ public class FilmService {
     public List<Film> getFilms() {
 
         List<Film> films = filmRepository.getFilms();
-        Map<Integer, Mpa> list = mpaCategoryRepository.getAllFilmsMpaCategories();
-        Map<Integer, List<Genre>> genres = filmGenreRepository.getAllFilmsGenres();
-        List<Genre> genresForWrite; //без этого пишется null и постман выкидывает ошибку в тестах
-        for (Film f : films) {
-            f.setMpa(list.get(f.getId()));
-            genresForWrite = genres.get(f.getId());
-            if (genresForWrite != null) {
-                f.setGenres(genresForWrite);
-            } else {
-                genresForWrite = new ArrayList<>();
-                f.setGenres(genresForWrite);
-            }
-        }
+        getMpaAndGenreInFilms(films);
         return films;
     }
 
@@ -128,14 +116,37 @@ public class FilmService {
 
     public List<Film> getPopularFilms(int count) {
 
-        List<Film> popularFilms = getFilms();
-        popularFilms.sort(new FilmByLikeComparator());
+        List<Film> popularFilms = filmRepository.getFilmsByLikes(count);
+        System.out.println("\n" + popularFilms + "\n");
 
-        if (popularFilms.size() > count) {
-            popularFilms = popularFilms.subList(0, count);
+        if (popularFilms != null && !popularFilms.isEmpty()) {
+            getMpaAndGenreInFilms(popularFilms);
+        } else {
+            popularFilms = filmRepository.getFilms();
+            popularFilms.sort(new FilmByLikeComparator());
+            getMpaAndGenreInFilms(popularFilms);
         }
+
         log.info("Список популярных фильмов составлен");
         return popularFilms;
+    }
+
+    private void getMpaAndGenreInFilms(List<Film> films) {
+
+        Map<Integer, Mpa> list = mpaCategoryRepository.getAllFilmsMpaCategories(); // объем выгружаемых данных ограничен,
+        // , поэтому смело можно выгружать все значения
+        Map<Integer, List<Genre>> genres = filmGenreRepository.getAllFilmsGenres(); // аналогично
+        List<Genre> genresForWrite; //без этого пишется null и постман выкидывает ошибку в тестах
+        for (Film f : films) {
+            f.setMpa(list.get(f.getId()));
+            genresForWrite = genres.get(f.getId());
+            if (genresForWrite != null) {
+                f.setGenres(genresForWrite);
+            } else {
+                genresForWrite = new ArrayList<>();
+                f.setGenres(genresForWrite);
+            }
+        }
     }
 
     private void updateMpaInFilm(Film film) {

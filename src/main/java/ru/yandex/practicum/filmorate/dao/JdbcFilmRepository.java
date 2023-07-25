@@ -93,4 +93,20 @@ public class JdbcFilmRepository implements FilmRepository {
         log.info("Updated film with id {}", film.getId());
         return film;
     }
+
+    @Override
+    public List<Film> getFilmsByLikes(int count) {
+
+        final String sqlQuery = "SELECT * " +
+                "FROM FILMS " +
+                "WHERE FILM_ID IN (SELECT O.FILM_ID " +
+                "FROM (SELECT FILM_ID, COUNT(USER_ID) AS COUNT " +
+                "FROM LIKES " +
+                "GROUP BY FILM_ID) AS O " +
+                "WHERE COUNT <= :count)";
+
+        log.info("Get films sorted by likes.");
+        return jdbcOperations.query(sqlQuery, Map.of("count", count), filmRowMapper);
+    }
+
 }

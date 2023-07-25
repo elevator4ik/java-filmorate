@@ -66,12 +66,12 @@ public class UserService {
 
     public List<User> mutualFriends(int id, int friendId) {
 
-        List<User> mutualFriends = new ArrayList<>();
-        List<Integer> mutualFriendsInt = friendsRepository.mutualFriends(id, friendId);
-
-        for (int i : mutualFriendsInt) {
-            mutualFriends.add(getUserById(i));
+        List<User> mutualFriends = friendsRepository.mutualFriends(id, friendId);
+        System.out.println("\n" + mutualFriends + "\n");
+        if (mutualFriends == null) { // постман тесты не принимают null, им нужен пустой список
+            mutualFriends = new ArrayList<>();
         }
+
         log.info("Get mutual friends of user with id {} and {}", id, friendId);
 
         return mutualFriends;

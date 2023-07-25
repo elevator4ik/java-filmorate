@@ -14,4 +14,5 @@ public interface FilmRepository {
 
     Film update(Film film);
 
+    List<Film> getFilmsByLikes(int count);
 }

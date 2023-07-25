@@ -3,8 +3,6 @@ package ru.yandex.practicum.filmorate.model.mappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.filmorate.dao.interfaces.FilmGenreRepository;
-import ru.yandex.practicum.filmorate.dao.interfaces.GenreRepository;
 import ru.yandex.practicum.filmorate.dao.interfaces.LikesRepository;
 import ru.yandex.practicum.filmorate.model.Film;
 
@@ -16,8 +14,6 @@ import java.sql.SQLException;
 @RequiredArgsConstructor
 public class FilmRowMapper implements RowMapper<Film> {
 
-    final FilmGenreRepository filmGenreRepository;
-    final GenreRepository genreRepository;
     final LikesRepository likesRepository;
 
     @Override
