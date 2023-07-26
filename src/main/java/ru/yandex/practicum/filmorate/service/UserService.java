@@ -1,97 +1,79 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dao.interfaces.FriendsRepository;
+import ru.yandex.practicum.filmorate.dao.interfaces.UserRepository;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.ServiceManipulation;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class UserService {
 
-    UserStorage storage;
-
-    public UserService(UserStorage storage) {
-        this.storage = storage;
-    }
+    final UserRepository userRepository;
+    final FriendsRepository friendsRepository;
 
     public List<User> getUsers() {
-        return storage.getUsers();
+        return userRepository.getUsers();
     }
 
     public User getUserById(int id) {
-        return storage.getUser(id);
+        return userRepository.getUser(id);
     }
 
     public User add(User user) {
         checkUserData(user);
-
-        return storage.add(user);
+        return userRepository.add(user);
     }
 
     public User update(User user) {
         checkUserData(user);
-
-        return storage.update(user);
+        return userRepository.update(user);
     }
-
 
     public List<User> getUserFriends(int id) {
-        List<User> usersFromList = new ArrayList<>();
 
-        for (int i : storage.getUser(id).getFriendList()) {
-            usersFromList.add(storage.getUser(i));
+        List<User> friends = new ArrayList<>();
+        List<Integer> friendsInt = friendsRepository.getUserFriends(id);
+        for (int i : friendsInt) {
+            friends.add(getUserById(i));
         }
         log.info("Get friends of user {} ", id);
-        return usersFromList;
+        return friends;
     }
 
-    public List<User> friendManipulating(int id, int friendId, ServiceManipulation manipulation) {
+    public void addFriend(int id, int friendId) {
 
-        User user = storage.getUser(id);
-        User friend = storage.getUser(friendId);
-        Set<Integer> userFriends = user.getFriendList();
-        Set<Integer> friendFriends = friend.getFriendList();
-        List<User> mutualFriends = new ArrayList<>();
+        if (userRepository.getUser(id) != null & userRepository.getUser(friendId) != null) {
+            friendsRepository.setFriends(id, friendId);
+            log.info("Add friend with id {} to user with id {}", friendId, id);
+        }
+    }
 
-        if (userFriends == null) {
-            userFriends = new HashSet<>();
+    public void deleteFriend(int id, int friendId) {
+
+        friendsRepository.deleteFriends(id, friendId);
+        log.info("User with id {} no more hobnob with user with id {}", friendId, id);
+
+    }
+
+    public List<User> mutualFriends(int id, int friendId) {
+
+        List<User> mutualFriends = friendsRepository.mutualFriends(id, friendId);
+        System.out.println("\n" + mutualFriends + "\n");
+        if (mutualFriends == null) { // постман тесты не принимают null, им нужен пустой список
+            mutualFriends = new ArrayList<>();
         }
-        if (friendFriends == null) {
-            friendFriends = new HashSet<>();
-        }
-        switch (manipulation) {
-            case ADD:
-                userFriends.add(friendId);
-                friendFriends.add(id);
-                user.setFriendList(userFriends);
-                friend.setFriendList(friendFriends);
-                log.info("Add friend with id " + friendId + " to user with id " + id);
-                break;
-            case DELETE:
-                userFriends.remove(friendId);
-                friendFriends.remove(id);
-                user.setFriendList(userFriends);
-                friend.setFriendList(friendFriends);
-                log.info("Friend with id " + friendId + " was deleted from friends of user with id " + id);
-                break;
-            case MUTUAL:
-                for (int i : userFriends) {
-                    if (friendFriends.contains(i)) {
-                        mutualFriends.add(storage.getUser(i));
-                    }
-                }
-                log.info("Get mutual friends of user with id " + id + " and " + friendId);
-                break;
-        }
+
+        log.info("Get mutual friends of user with id {} and {}", id, friendId);
+
         return mutualFriends;
     }
 
