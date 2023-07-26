@@ -104,7 +104,7 @@ public class JdbcFilmRepository implements FilmRepository {
                 "FROM LIKES " +
                 "GROUP BY FILM_ID " +
                 "ORDER BY COUNT DESC " +
-                "LIMIT :cont) AS O)";
+                "LIMIT :count) AS O)";
 
         log.info("Get films sorted by likes.");
         return jdbcOperations.query(sqlQuery, Map.of("count", count), filmRowMapper);

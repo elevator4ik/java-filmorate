@@ -73,7 +73,7 @@ public class JdbcFilmGenreRepository implements FilmGenreRepository {
                 "FROM LIKES " +
                 "GROUP BY FILM_ID " +
                 "ORDER BY COUNT DESC " +
-                "LIMIT :cont) AS O)) AS FG ON G.GENRE_ID = FG.GENRE_ID";
+                "LIMIT :count) AS O)) AS FG ON G.GENRE_ID = FG.GENRE_ID";
         return jdbcOperations.query(sqlQuery, Map.of("count", count), new AllFilmsGenresExtractor());
     }
 }
