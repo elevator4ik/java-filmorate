@@ -77,7 +77,7 @@ SELECT ID, NAME, LOGIN, BIRTHDAY,EMAIL FROM USERS
    `./mvnw clean install`
 
 4. Запуск приложения с помощью команды:
-:
+
 `./mvnw spring-boot:run`
 
 Приложение запустится на порту 8080. Доступ к API 
