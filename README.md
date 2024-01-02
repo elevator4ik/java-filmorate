@@ -40,6 +40,7 @@ Java 11+, REST API, Spring Boot, Maven, Lombok, H2
 12. FILM_DIRECTOR - содержит в себе связи между филмами и режисерами
 
    Примеры запросов в SQL
+   
    Выборка всех популярных фильмов с ограничением:
 
 ```sql
@@ -62,6 +63,7 @@ SELECT ID, NAME, LOGIN, BIRTHDAY,EMAIL FROM USERS
              WHERE F1.USER_ID = :USERID AND F2.USER_ID = :FRIEND_ID
           )          
 ```
+
 ### Над функционалом работали
 
 **Галеев Александр,**
