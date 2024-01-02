@@ -1,40 +1,33 @@
 package ru.yandex.practicum.filmorate.model;
 
 import lombok.Data;
-import lombok.NonNull;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.PositiveOrZero;
+import javax.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Data
 public class Film {
-
     private int id;
-    @NonNull
     @NotBlank
     private String name;
-    @NonNull
     @NotBlank
+    @Size(max = 200)
     private String description;
-    @NonNull
+    @NotNull
+    @ReleaseDate
     private LocalDate releaseDate;
     @NotNull
-    private int duration;
-    private List<Genre> genres;
-    private Mpa mpa;
-    private int likes;
-
-    public Film(int filmId, String filmName, String filmDescription, LocalDate releaseDate,
-                int duration, int likeCount) {
-        this.id = filmId;
-        this.name = filmName;
-        this.description = filmDescription;
-        this.releaseDate = releaseDate;
-        this.duration = duration;
-
-        this.likes = likeCount;
-    }
+    @PositiveOrZero
+    private Integer duration;
+    private Set<Integer> likes = new HashSet<>();
+    private ArrayList<GenreModel> genres;
+    private MpaModel mpa;
+    private List<Director> directors;
 }
-

@@ -3,90 +3,118 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.dao.interfaces.FriendsRepository;
-import ru.yandex.practicum.filmorate.dao.interfaces.UserRepository;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.exceptions.NonexistentException;
+import ru.yandex.practicum.filmorate.model.Feed;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.enums.EnumEventType;
+import ru.yandex.practicum.filmorate.model.enums.EnumOperation;
+import ru.yandex.practicum.filmorate.service.util.FeedSaver;
+import ru.yandex.practicum.filmorate.storage.DAO.storage.FeedDbStorage;
+import ru.yandex.practicum.filmorate.storage.DAO.storage.UserDbStorage;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class UserService {
+    private final UserDbStorage userStorage;
+    private final FeedDbStorage feedStorage;
+    private final FilmService filmService;
+    private final FeedSaver feedSaver;
 
-    final UserRepository userRepository;
-    final FriendsRepository friendsRepository;
-
-    public List<User> getUsers() {
-        return userRepository.getUsers();
+    private void checkNameUser(User user) {
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
     }
 
-    public User getUserById(int id) {
-        return userRepository.getUser(id);
+    public List<User> findAll() {
+        return userStorage.findAll();
     }
 
-    public User add(User user) {
-        checkUserData(user);
-        return userRepository.add(user);
+    public User create(User user) {
+        checkNameUser(user);
+        return userStorage.create(user);
     }
 
     public User update(User user) {
-        checkUserData(user);
-        return userRepository.update(user);
+        checkNameUser(user);
+        if (userStorage.findUserById(user.getId()) == null) {
+            throw new NonexistentException("user not exist with current id");
+        }
+        return userStorage.update(user);
     }
 
-    public List<User> getUserFriends(int id) {
-
-        List<User> friends = new ArrayList<>();
-        List<Integer> friendsInt = friendsRepository.getUserFriends(id);
-        for (int i : friendsInt) {
-            friends.add(getUserById(i));
+    public User findUserById(int id) {
+        if (id <= 0) {
+            throw new NonexistentException("id user <= 0");
         }
-        log.info("Get friends of user {} ", id);
-        return friends;
+        if (userStorage.findUserById(id) == null) {
+            throw new NonexistentException("user not exist with current id");
+        }
+        return userStorage.findUserById(id);
     }
 
-    public void addFriend(int id, int friendId) {
-
-        if (userRepository.getUser(id) != null & userRepository.getUser(friendId) != null) {
-            friendsRepository.setFriends(id, friendId);
-            log.info("Add friend with id {} to user with id {}", friendId, id);
-        }
+    public void addFriend(User user, User friend) {
+        userStorage.addFriend(user, friend);
+        feedSaver.saveFeed(user.getId(), (long) friend.getId(), EnumEventType.FRIEND, EnumOperation.ADD);
     }
 
-    public void deleteFriend(int id, int friendId) {
-
-        friendsRepository.deleteFriends(id, friendId);
-        log.info("User with id {} no more hobnob with user with id {}", friendId, id);
-
+    public void deleteFriend(User user, User friend) {
+        userStorage.deleteFriend(user, friend);
+        feedSaver.saveFeed(user.getId(), (long) friend.getId(), EnumEventType.FRIEND, EnumOperation.REMOVE);
     }
 
-    public List<User> mutualFriends(int id, int friendId) {
-
-        List<User> mutualFriends = friendsRepository.mutualFriends(id, friendId);
-        System.out.println("\n" + mutualFriends + "\n");
-        if (mutualFriends == null) { // постман тесты не принимают null, им нужен пустой список
-            mutualFriends = new ArrayList<>();
+    public List<User> findMutualFriends(Integer id, Integer otherId) {
+        if (userStorage.findUserById(id) == null || userStorage.findUserById(otherId) == null) {
+            throw new NonexistentException("user not exist with current id");
         }
-
-        log.info("Get mutual friends of user with id {} and {}", id, friendId);
-
-        return mutualFriends;
+        return userStorage.getCommonFriends(id, otherId);
     }
 
-    private void checkUserData(User user) {
-        if (user.getLogin().contains(" ")) {
-            throw new ValidationException("логин не может быть пустым и содержать пробелы");
+    public List<User> getFriends(Integer id) {
+        if (userStorage.findUserById(id) == null) {
+            throw new NonexistentException("user not exist with current id");
         }
-        if (user.getBirthday().isAfter(LocalDate.now())) {
-            throw new ValidationException("дата рождения указа некорректно");
+        return userStorage.allFriends(userStorage.findUserById(id));
+    }
+
+
+    public User deleteById(Integer id) {
+        if (id <= 0) {
+            throw new NonexistentException("incorect if for delete user");
         }
-        if (user.getName() == null || user.getName().isEmpty()) {
-            user.setName(user.getLogin());
-            log.info("Update user name with id {}", user.getId());
+        if (userStorage.findUserById(id) == null) {
+            throw new NonexistentException("user not exist with current id");
         }
+        return userStorage.deleteById(id);
+    }
+
+    public List<Film> getRecommendations(int userId) {
+        findUserById(userId);
+        int id = -1;
+        int max = 0;
+        for (User user : userStorage.findAll()) {
+            if (user.getId() != userId) {
+                int size = filmService.findMutualFilms(userId, user.getId()).size();
+                if (size > max) {
+                    id = user.getId();
+                    max = size;
+                }
+            }
+        }
+        if (id == -1) {
+            return new ArrayList<>();
+        }
+        return filmService.getRecommendations(userId, id);
+    }
+
+    public List<Feed> getFeed(Integer userId) {
+        findUserById(userId);
+        return feedStorage.findUsersFeed(userId);
     }
 }
